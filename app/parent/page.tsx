@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import {
   Settings,
   Youtube,
@@ -14,6 +15,7 @@ import {
   Check,
   X,
   ExternalLink,
+  Home,
 } from 'lucide-react';
 import Image from 'next/image';
 
@@ -99,11 +101,12 @@ export default function ParentPanel() {
 
   const loadData = async () => {
     try {
+      const authHeaders = getAuthHeader();
       const [settingsRes, channelsRes, historyRes, pendingRes] = await Promise.all([
-        fetch('/api/settings'),
-        fetch('/api/channels'),
-        fetch('/api/history'),
-        fetch('/api/pending'),
+        fetch('/api/settings', { headers: authHeaders }),
+        fetch('/api/channels', { headers: authHeaders }),
+        fetch('/api/history', { headers: authHeaders }),
+        fetch('/api/pending', { headers: authHeaders }),
       ]);
 
       const settingsData = await settingsRes.json();
@@ -123,19 +126,29 @@ export default function ParentPanel() {
     }
   };
 
+  const getAuthHeader = (): Record<string, string> => {
+    const token = sessionStorage.getItem('parentToken');
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
+  };
+
   const handleLogout = () => {
     sessionStorage.removeItem('parentAuth');
+    sessionStorage.removeItem('parentToken');
     router.replace('/');
   };
 
   const saveSettings = async () => {
     setSaving(true);
     try {
-      await fetch('/api/settings', {
+      const res = await fetch('/api/settings', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
         body: JSON.stringify(settings),
       });
+      if (!res.ok) {
+        const data = await res.json();
+        console.error('Save error:', data.error);
+      }
     } catch (err) {
       console.error('Save error:', err);
     } finally {
@@ -166,7 +179,7 @@ export default function ParentPanel() {
     try {
       const res = await fetch('/api/channels', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
         body: JSON.stringify({ channelId: newChannelId.trim() }),
       });
       if (res.ok) {
@@ -183,7 +196,7 @@ export default function ParentPanel() {
 
   const removeChannel = async (id: number) => {
     try {
-      await fetch(`/api/channels?id=${id}`, { method: 'DELETE' });
+      await fetch(`/api/channels?id=${id}`, { method: 'DELETE', headers: getAuthHeader() });
       setChannels(channels.filter((c) => c.id !== id));
     } catch (err) {
       console.error('Remove channel error:', err);
@@ -194,7 +207,7 @@ export default function ParentPanel() {
     try {
       await fetch('/api/pending', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...getAuthHeader() },
         body: JSON.stringify({ videoId, action }),
       });
       setPending(pending.filter((p) => p.videoId !== videoId));
@@ -226,6 +239,13 @@ export default function ParentPanel() {
               <Shield className="w-6 h-6 text-white" />
             </div>
             <span className="text-xl font-bold text-gray-800">Ebeveyn Paneli</span>
+            <Link
+              href="/"
+              className="flex items-center gap-1 px-3 py-1.5 text-sm text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all"
+            >
+              <Home className="w-4 h-4" />
+              <span>Ana Sayfa</span>
+            </Link>
           </div>
           <button
             onClick={handleLogout}

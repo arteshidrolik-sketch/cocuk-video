@@ -65,6 +65,9 @@ export default function ParentLogin({ onClose }: ParentLoginProps) {
       }
 
       sessionStorage.setItem('parentAuth', 'true');
+      if (data.token) {
+        sessionStorage.setItem('parentToken', data.token);
+      }
       router.push('/parent');
     } catch {
       setError('Bağlantı hatası');
