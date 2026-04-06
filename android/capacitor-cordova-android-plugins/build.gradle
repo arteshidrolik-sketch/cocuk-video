@@ -1,1 +1,9 @@
-// empty
+apply plugin: 'com.android.library'
+
+android {
+    compileSdkVersion 33
+    defaultConfig {
+        minSdkVersion 22
+        targetSdkVersion 33
+    }
+}
