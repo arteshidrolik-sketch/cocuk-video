@@ -1,7 +1,7 @@
 {
   "framework": "nextjs",
   "buildCommand": "npx prisma generate && next build",
-  "installCommand": "npm install",
+  "installCommand": "npm install --legacy-peer-deps",
   "outputDirectory": ".next",
   "functions": {
     "app/api/**": {
