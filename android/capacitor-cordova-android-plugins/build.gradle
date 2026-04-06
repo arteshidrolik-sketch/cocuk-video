@@ -1,6 +1,7 @@
 apply plugin: 'com.android.library'
 
 android {
+    namespace 'com.capacitor.cordova.android.plugins'
     compileSdkVersion 33
     defaultConfig {
         minSdkVersion 22
