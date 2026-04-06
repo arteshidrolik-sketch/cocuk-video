@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import { checkQuota, incrementQuota } from '@/lib/quota-check';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
+    // Quota check
+    const quota = await checkQuota(request);
+    if (!quota.allowed && quota.response) {
+      return quota.response;
+    }
+
     const body = await request.json();
     const { videoId, title, description, channelId, channelName, thumbnailUrl } = body;
 
@@ -26,6 +33,8 @@ export async function POST(request: NextRequest) {
           approvedBy: 'channel',
         },
       });
+      // Increment quota for approved channel hits too
+      await incrementQuota(request);
       // Return SSE format so client stream reader can parse it
       const encoder = new TextEncoder();
       const finalData = JSON.stringify({
@@ -161,6 +170,9 @@ Video Bilgileri:
                         },
                       });
                     }
+
+                    // Increment quota after successful analysis
+                    await incrementQuota(request);
 
                     const finalData = JSON.stringify({
                       status: 'completed',

@@ -15,11 +15,12 @@ interface VideoAnalyzerProps {
   };
   onClose: () => void;
   onApproved: () => void;
+  onQuotaExceeded?: (data: { dailyVideoCount: number; freeVideoLimit: number; trialUsed: boolean }) => void;
 }
 
 type AnalysisStatus = 'analyzing' | 'approved' | 'rejected' | 'pending' | 'error';
 
-export default function VideoAnalyzer({ video, onClose, onApproved }: VideoAnalyzerProps) {
+export default function VideoAnalyzer({ video, onClose, onApproved, onQuotaExceeded }: VideoAnalyzerProps) {
   const [status, setStatus] = useState<AnalysisStatus>('analyzing');
   const [message, setMessage] = useState('Video analiz ediliyor...');
   const [reason, setReason] = useState('');
@@ -31,6 +32,18 @@ export default function VideoAnalyzer({ video, onClose, onApproved }: VideoAnaly
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(video),
       });
+
+      // Handle quota exceeded
+      if (response.status === 429) {
+        const data = await response.json();
+        onClose();
+        onQuotaExceeded?.({
+          dailyVideoCount: data.dailyVideoCount ?? 5,
+          freeVideoLimit: data.freeVideoLimit ?? 5,
+          trialUsed: data.trialUsed ?? false,
+        });
+        return;
+      }
 
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();

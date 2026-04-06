@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Sparkles, Search, Play, Star, Shield, Lock, Eye, EyeOff, User } from 'lucide-react';
+import { Sparkles, Search, Play, Star, Shield, Lock, Eye, EyeOff, User, Crown, X, Zap } from 'lucide-react';
 import ChildHeader from '@/components/child-header';
 import VideoCard from '@/components/video-card';
 import VideoAnalyzer from '@/components/video-analyzer';
@@ -26,6 +26,13 @@ export default function HomePage() {
   const [playingVideo, setPlayingVideo] = useState<VideoItem | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
   
+  // Quota / freemium state
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [quotaData, setQuotaData] = useState<{ dailyVideoCount: number; freeVideoLimit: number; trialUsed: boolean } | null>(null);
+  const [trialInfo, setTrialInfo] = useState<{ isTrialActive: boolean; trialEndsAt: string | null; trialUsed: boolean; isPremium: boolean } | null>(null);
+  const [trialLoading, setTrialLoading] = useState(false);
+  const [trialMessage, setTrialMessage] = useState('');
+
   // Setup state
   const [checkingSetup, setCheckingSetup] = useState(true);
   const [needsSetup, setNeedsSetup] = useState(false);
@@ -99,6 +106,49 @@ export default function HomePage() {
       loadRecent();
     }
   }, [needsSetup, checkingSetup]);
+
+  // Fetch trial/quota info
+  useEffect(() => {
+    const fetchTrialInfo = async () => {
+      try {
+        const res = await fetch('/api/trial');
+        const data = await res.json();
+        setTrialInfo(data);
+      } catch {
+        // ignore
+      }
+    };
+    fetchTrialInfo();
+  }, []);
+
+  const handleStartTrial = async () => {
+    setTrialLoading(true);
+    setTrialMessage('');
+    try {
+      const res = await fetch('/api/trial', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        setTrialMessage('🎉 1 günlük deneme başlatıldı! Sınırsız analiz yapabilirsiniz.');
+        const info = await fetch('/api/trial').then(r => r.json());
+        setTrialInfo(info);
+        setTimeout(() => {
+          setShowPremiumModal(false);
+          setTrialMessage('');
+        }, 2000);
+      } else {
+        setTrialMessage(data.message || 'Deneme başlatılamadı.');
+      }
+    } catch {
+      setTrialMessage('Bağlantı hatası.');
+    } finally {
+      setTrialLoading(false);
+    }
+  };
+
+  const handleQuotaExceeded = (data: { dailyVideoCount: number; freeVideoLimit: number; trialUsed: boolean }) => {
+    setQuotaData(data);
+    setShowPremiumModal(true);
+  };
 
   const handleSetup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -412,6 +462,7 @@ export default function HomePage() {
           video={selectedVideo}
           onClose={() => setSelectedVideo(null)}
           onApproved={handleVideoApproved}
+          onQuotaExceeded={handleQuotaExceeded}
         />
       )}
 
@@ -420,6 +471,105 @@ export default function HomePage() {
           video={playingVideo}
           onClose={() => setPlayingVideo(null)}
         />
+      )}
+
+      {/* Trial info banner */}
+      {trialInfo?.isTrialActive && trialInfo.trialEndsAt && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-6 py-3 rounded-2xl shadow-xl flex items-center gap-3">
+          <Zap className="w-5 h-5 text-yellow-300" />
+          <span className="text-sm font-medium">
+            Deneme aktif — {new Date(trialInfo.trialEndsAt).toLocaleString('tr-TR', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' })}&apos;e kadar sınırsız
+          </span>
+        </div>
+      )}
+
+      {/* Premium modal */}
+      {showPremiumModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
+            {/* Header */}
+            <div className="relative bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-8 text-center">
+              <button
+                onClick={() => { setShowPremiumModal(false); setTrialMessage(''); }}
+                className="absolute top-4 right-4 p-1.5 bg-white/20 rounded-full text-white hover:bg-white/30 transition-all"
+              >
+                <X className="w-4 h-4" />
+              </button>
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-white/20 rounded-3xl mb-4">
+                <Crown className="w-10 h-10 text-yellow-300" />
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-2">Günlük Limit Doldu!</h2>
+              <p className="text-white/80 text-sm">
+                Bugün {quotaData?.dailyVideoCount ?? 5}/{quotaData?.freeVideoLimit ?? 5} video analiz hakkını kullandınız.
+              </p>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 space-y-4">
+              {trialMessage && (
+                <div className={`px-4 py-3 rounded-xl text-sm font-medium ${trialMessage.startsWith('🎉') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-600'}`}>
+                  {trialMessage}
+                </div>
+              )}
+
+              {/* Trial option */}
+              {!quotaData?.trialUsed && !trialInfo?.trialUsed && (
+                <div className="border-2 border-indigo-200 rounded-2xl p-4">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center">
+                      <Zap className="w-5 h-5 text-indigo-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-gray-800">Ücretsiz Deneme</h3>
+                      <p className="text-xs text-gray-500">1 günlük tam erişim — sadece bir kez</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleStartTrial}
+                    disabled={trialLoading}
+                    className="w-full py-2.5 bg-indigo-500 hover:bg-indigo-600 text-white font-semibold rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {trialLoading ? (
+                      <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Başlatılıyor...</>
+                    ) : (
+                      '🚀 Denemeyi Başlat'
+                    )}
+                  </button>
+                </div>
+              )}
+
+              {/* Premium option */}
+              <div className="border-2 border-purple-200 rounded-2xl p-4 bg-purple-50">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
+                    <Crown className="w-5 h-5 text-purple-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-gray-800">Premium Üyelik</h3>
+                    <p className="text-xs text-gray-500">Sınırsız analiz, öncelikli destek</p>
+                  </div>
+                </div>
+                <ul className="text-sm text-gray-600 space-y-1 mb-3">
+                  <li>✅ Günlük sınırsız video analizi</li>
+                  <li>✅ Öncelikli AI analizi</li>
+                  <li>✅ Gelişmiş ebeveyn raporları</li>
+                </ul>
+                <button
+                  disabled
+                  className="w-full py-2.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-xl opacity-70 cursor-not-allowed"
+                  title="Yakında aktif olacak"
+                >
+                  💳 Premium&apos;a Geç — Yakında
+                </button>
+                <p className="text-center text-xs text-gray-400 mt-2">Ödeme sistemi yakında aktif olacak</p>
+              </div>
+
+              <p className="text-center text-xs text-gray-400">
+                Yarın {quotaData?.freeVideoLimit ?? 5} ücretsiz hakkınız yenilenecek.
+              </p>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

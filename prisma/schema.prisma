@@ -18,10 +18,25 @@ model Settings {
   predefinedFilters     Json     @default("{\"violence\": true, \"fear\": true, \"profanity\": true, \"adult\": true}") @map("predefined_filters")
   customKeywords        Json     @default("[]") @map("custom_keywords")
   dailyTimeLimitMinutes Int?     @map("daily_time_limit_minutes")
+  freeVideoLimit        Int      @default(5) @map("free_video_limit")
   createdAt             DateTime @default(now()) @map("created_at")
   updatedAt             DateTime @updatedAt @map("updated_at")
 
   @@map("settings")
+}
+
+model UserQuota {
+  id               Int       @id @default(autoincrement())
+  userId           String    @unique @map("user_id") // IP-based for now
+  dailyVideoCount  Int       @default(0) @map("daily_video_count")
+  lastResetDate    DateTime  @default(now()) @map("last_reset_date")
+  isPremium        Boolean   @default(false) @map("is_premium")
+  trialUsed        Boolean   @default(false) @map("trial_used")
+  trialStartDate   DateTime? @map("trial_start_date")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  @@map("user_quota")
 }
 
 model ApprovedChannel {
