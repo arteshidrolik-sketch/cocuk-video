@@ -1,0 +1,63 @@
+generator client {
+    provider = "prisma-client-js"
+    binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+    output = "../node_modules/.prisma/client"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model Settings {
+  id                    Int      @id @default(1)
+  parentPasswordHash    String?  @map("parent_password_hash")
+  parentFirstName       String?  @map("parent_first_name")
+  parentLastName        String?  @map("parent_last_name")
+  ageGroup              String   @default("3-13") @map("age_group")
+  predefinedFilters     Json     @default("{\"violence\": true, \"fear\": true, \"profanity\": true, \"adult\": true}") @map("predefined_filters")
+  customKeywords        Json     @default("[]") @map("custom_keywords")
+  dailyTimeLimitMinutes Int?     @map("daily_time_limit_minutes")
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  @@map("settings")
+}
+
+model ApprovedChannel {
+  id               Int      @id @default(autoincrement())
+  channelId        String   @unique @map("channel_id")
+  channelName      String   @map("channel_name")
+  channelThumbnail String?  @map("channel_thumbnail")
+  addedAt          DateTime @default(now()) @map("added_at")
+
+  @@map("approved_channels")
+}
+
+model VideoHistory {
+  id              Int      @id @default(autoincrement())
+  videoId         String   @map("video_id")
+  videoTitle      String   @map("video_title")
+  channelId       String?  @map("channel_id")
+  channelName     String   @map("channel_name")
+  thumbnailUrl    String?  @map("thumbnail_url")
+  status          String   @default("approved") // approved, rejected, pending
+  analysisResult  Json?    @map("analysis_result")
+  watchedAt       DateTime @default(now()) @map("watched_at")
+  approvedBy      String   @default("system") @map("approved_by") // system, parent, channel
+
+  @@map("video_history")
+}
+
+model PendingApproval {
+  id              Int      @id @default(autoincrement())
+  videoId         String   @unique @map("video_id")
+  videoTitle      String   @map("video_title")
+  channelId       String?  @map("channel_id")
+  channelName     String   @map("channel_name")
+  thumbnailUrl    String?  @map("thumbnail_url")
+  analysisResult  Json?    @map("analysis_result")
+  requestedAt     DateTime @default(now()) @map("requested_at")
+
+  @@map("pending_approvals")
+}
