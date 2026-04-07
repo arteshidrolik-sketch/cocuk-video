@@ -41,7 +41,9 @@ export async function POST(request: NextRequest) {
     ).toString('base64');
 
     // PayTR hash string format: merchant_id + user_ip + merchant_oid + email + payment_amount + user_basket + no_installment + max_installment + currency + test_mode
-    const hashStr = `${merchantId}${userIp}${merchantOid}${email}${paymentAmount}${userBasket}${installmentCount}${installmentCount}${currency}${testMode}${nonThreeD}`;
+    const noInstallment = '0';
+    const maxInstallment = '0';
+    const hashStr = `${merchantId}${userIp}${merchantOid}${email}${paymentAmount}${userBasket}${noInstallment}${maxInstallment}${currency}${testMode}`;
     const paytrToken = crypto
       .createHmac('sha256', merchantKey)
       .update(hashStr + merchantSalt)
@@ -56,8 +58,8 @@ export async function POST(request: NextRequest) {
       paytr_token: paytrToken,
       user_basket: userBasket,
       debug_on: '1',
-      no_installment: '0',
-      max_installment: '0',
+      no_installment: noInstallment,
+      max_installment: maxInstallment,
       user_name: name || 'Kullanıcı',
       user_address: 'Türkiye',
       user_phone: '05000000000',
