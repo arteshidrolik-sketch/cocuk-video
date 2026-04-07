@@ -231,5 +231,93 @@ const hashStr = `${merchantId}${userIp}${merchantOid}${email}${paymentAmount}${u
 
 ---
 
+## 10. Hesap Bilgileri ve Kimlik Bilgileri
+
+> ⚠️ **GÜVENLİK UYARISI:** Bu bilgiler hassas veriler içerir. Sadece yetkili kişilerle paylaşın.
+
+### 10.1 GitHub
+| Alan | Değer |
+|------|-------|
+| **Platform** | github.com |
+| **Kullanıcı Adı** | arteshidrolik-sketch |
+| **Email** | arteshidrolik@gmail.com |
+| **Giriş Yöntemi** | GitHub hesabı (Google ile bağlı) |
+| **Not** | 2FA aktif değil |
+
+### 10.2 Vercel
+| Alan | Değer |
+|------|-------|
+| **Platform** | vercel.com |
+| **Giriş Yöntemi** | GitHub SSO (arteshidrolik-sketch) |
+| **Email** | arteshidrolik@gmail.com |
+| **Team** | arteshidrolik-sketch's projects |
+| **API Token** | [REDACTED - Güvenlik nedeniyle gizlendi] |
+
+### 10.3 Neon PostgreSQL
+| Alan | Değer |
+|------|-------|
+| **Platform** | console.neon.tech |
+| **Giriş Yöntemi** | GitHub SSO |
+| **Proje** | cocuk-video-db |
+| **Region** | aws-eu-central-1 (Frankfurt) |
+| **Database URL** | Vercel env vars'da (DATABASE_URL) |
+
+### 10.4 Google Cloud Console (YouTube API)
+| Alan | Değer |
+|------|-------|
+| **Platform** | console.cloud.google.com |
+| **Google Hesabı** | arteshidrolik@gmail.com |
+| **Proje** | cocuk-video-api |
+| **API** | YouTube Data API v3 |
+| **API Key** | Vercel env vars'da (YOUTUBE_API_KEY) |
+
+### 10.5 Abacus.AI
+| Alan | Değer |
+|------|-------|
+| **Platform** | abacus.ai |
+| **Giriş Yöntemi** | GitHub SSO |
+| **Email** | arteshidrolik@gmail.com |
+| **API Key** | Vercel env vars'da (ABACUSAI_API_KEY) |
+
+### 10.6 PayTR
+| Alan | Değer |
+|------|-------|
+| **Platform** | www.paytr.com |
+| **Mağaza No** | 688965 |
+| **Giriş Yöntemi** | Email/Şifre |
+| **Email** | arteshidrolik@gmail.com |
+| **Merchant Key** | [REDACTED - Güvenlik nedeniyle gizlendi] |
+| **Merchant Salt** | [REDACTED - Güvenlik nedeniyle gizlendi] |
+| **Durum** | Demo/Test hesap |
+| **Not** | Canlı ödeme için onay bekleniyor |
+
+### 10.7 OpenClaw (Telegram Bot)
+| Alan | Değer |
+|------|-------|
+| **Platform** | OpenClaw Gateway |
+| **Bot Adı** | Makbule |
+| **Chat ID** | 5828859455 |
+| **Kanal** | Telegram |
+| **Konfigürasyon** | ~/.openclaw/openclaw.json |
+
+---
+
+## 11. Önemli Dosya ve Konumlar
+
+### 11.1 Sunucu Üzerinde
+| Dosya/Klasör | Konum | Açıklama |
+|--------------|-------|----------|
+| **Proje Kodu** | `/home/ubuntu/company/apps/cocuk-video/` | Ana uygulama dizini |
+| **OpenClaw Config** | `~/.openclaw/openclaw.json` | Gateway yapılandırması |
+| **Proje Rehberi** | `PROJE_REHBERI.md` | Bu dosya |
+
+### 11.2 GitHub'da
+| Repo | URL | Açıklama |
+|------|-----|----------|
+| **cocuk-video** | https://github.com/arteshidrolik-sketch/cocuk-video | Ana uygulama |
+| **getdriver** | https://github.com/arteshidrolik-sketch/getdriver | GetDriver uygulaması |
+
+---
+
 *Son Güncelleme: 2026-04-07*
 *Proje Durumu: Beta / Test Aşaması*
