@@ -53,14 +53,20 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Transcript al
+    // Transcript al (5 saniyelik timeout)
     let transcript = '';
     try {
-      const transcriptRes = await fetch(`${request.nextUrl.origin}/api/youtube/transcript/${videoId}`);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+      const baseUrl = process.env.NEXTAUTH_URL || `https://${request.headers.get('host')}`;
+      const transcriptRes = await fetch(`${baseUrl}/api/youtube/transcript/${videoId}`, {
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
       const transcriptData = await transcriptRes.json();
       transcript = transcriptData.transcript || '';
     } catch {
-      console.log('Transcript alınamadı');
+      console.log('Transcript alınamadı, devam ediliyor...');
     }
 
     // Ayarları al
