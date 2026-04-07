@@ -53,6 +53,17 @@ export default function ChildHeader({ onSearch, searchQuery }: ChildHeaderProps)
     onSearch(suggestion);
   };
 
+  // Sayfa dışına tıklanınca önerileri kapat
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (inputRef.current && !inputRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   return (
     <>
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md shadow-lg">
@@ -94,7 +105,7 @@ export default function ChildHeader({ onSearch, searchQuery }: ChildHeaderProps)
                   setShowSuggestions(true);
                 }}
                 onFocus={() => setShowSuggestions(true)}
-                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                onBlur={() => {}}
                 placeholder="Video ara... 🎬"
                 className="w-full py-3 px-5 pl-12 rounded-2xl border-2 border-indigo-200 focus:border-indigo-400 bg-white text-lg transition-all"
                 autoComplete="off"
