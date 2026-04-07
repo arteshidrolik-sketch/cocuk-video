@@ -16,10 +16,13 @@ import {
   X,
   ExternalLink,
   Home,
+  Star,
+  Zap,
+  Crown,
 } from 'lucide-react';
 import Image from 'next/image';
 
-type Tab = 'settings' | 'channels' | 'history' | 'pending';
+type Tab = 'settings' | 'channels' | 'history' | 'pending' | 'subscription';
 
 interface SettingsData {
   ageGroup: string;
@@ -88,6 +91,10 @@ export default function ParentPanel() {
   // Pending state
   const [pending, setPending] = useState<PendingItem[]>([]);
 
+  // Subscription state
+  const [isPremium, setIsPremium] = useState(false);
+  const [subscriptionInfo, setSubscriptionInfo] = useState<{ plan: string; startDate: string; endDate: string } | null>(null);
+
   useEffect(() => {
     setMounted(true);
     const auth = sessionStorage.getItem('parentAuth');
@@ -102,11 +109,12 @@ export default function ParentPanel() {
   const loadData = async () => {
     try {
       const authHeaders = getAuthHeader();
-      const [settingsRes, channelsRes, historyRes, pendingRes] = await Promise.all([
+      const [settingsRes, channelsRes, historyRes, pendingRes, trialRes] = await Promise.all([
         fetch('/api/settings', { headers: authHeaders }),
         fetch('/api/channels', { headers: authHeaders }),
         fetch('/api/history', { headers: authHeaders }),
         fetch('/api/pending', { headers: authHeaders }),
+        fetch('/api/trial'),
       ]);
 
       const settingsData = await settingsRes.json();
@@ -121,6 +129,13 @@ export default function ParentPanel() {
       const historyData = await historyRes.json();
       setHistory(historyData.history || []);
       setPending(await pendingRes.json() || []);
+      
+      // Premium durumunu yükle
+      const trialData = await trialRes.json();
+      setIsPremium(trialData.isPremium ?? false);
+      if (trialData.subscriptionInfo) {
+        setSubscriptionInfo(trialData.subscriptionInfo);
+      }
     } catch (err) {
       console.error('Data load error:', err);
     }
@@ -265,6 +280,7 @@ export default function ParentPanel() {
             { id: 'channels', icon: Youtube, label: 'Onaylı Kanallar' },
             { id: 'history', icon: History, label: 'İzleme Geçmişi' },
             { id: 'pending', icon: Clock, label: `Bekleyenler (${pending.length})` },
+            { id: 'subscription', icon: isPremium ? Star : Crown, label: isPremium ? 'Premium ✨' : 'Üyelik' },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -273,7 +289,7 @@ export default function ParentPanel() {
                 activeTab === tab.id
                   ? 'bg-indigo-600 text-white'
                   : 'bg-white text-gray-600 hover:bg-gray-100'
-              }`}
+              } ${tab.id === 'subscription' && isPremium ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-white' : ''}`}
             >
               <tab.icon className="w-5 h-5" />
               {tab.label}
@@ -549,6 +565,93 @@ export default function ParentPanel() {
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Subscription Tab */}
+        {activeTab === 'subscription' && (
+          <div className="bg-white rounded-2xl shadow-lg p-6">
+            <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
+              <Crown className="w-5 h-5 text-amber-500" />
+              Üyelik Durumu
+            </h2>
+
+            {isPremium ? (
+              <div className="space-y-6">
+                <div className="bg-gradient-to-r from-amber-400 to-orange-500 text-white p-6 rounded-2xl">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Star className="w-8 h-8" />
+                    <span className="text-2xl font-bold">Premium Üye ✨</span>
+                  </div>
+                  <p className="text-white/90">
+                    Tüm premium özelliklere erişiminiz var!
+                  </p>
+                </div>
+
+                {subscriptionInfo && (
+                  <div className="bg-gray-50 p-4 rounded-xl">
+                    <h3 className="font-semibold mb-3">Abonelik Bilgileri</h3>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Plan:</span>
+                        <span className="font-medium">
+                          {subscriptionInfo.plan === 'STARTER' && 'Başlangıç'}
+                          {subscriptionInfo.plan === 'PLUS' && 'Profesyonel'}
+                          {subscriptionInfo.plan === 'INSTITUTION' && 'Kurum'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Başlangıç:</span>
+                        <span>{new Date(subscriptionInfo.startDate).toLocaleDateString('tr-TR')}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Bitiş:</span>
+                        <span>{new Date(subscriptionInfo.endDate).toLocaleDateString('tr-TR')}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="bg-green-50 p-4 rounded-xl">
+                  <h3 className="font-semibold text-green-800 mb-2 flex items-center gap-2">
+                    <Zap className="w-4 h-4" />
+                    Aktif Özellikler
+                  </h3>
+                  <ul className="text-sm text-green-700 space-y-1">
+                    <li>✓ Sınırsız video analizi</li>
+                    <li>✓ Gelişmiş içerik filtreleme</li>
+                    <li>✓ Özel anahtar kelime listesi</li>
+                    <li>✓ Kanal onay sistemi</li>
+                    <li>✓ İzleme geçmişi</li>
+                  </ul>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="bg-gray-100 p-6 rounded-2xl text-center">
+                  <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Zap className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-700 mb-2">Ücretsiz Plan</h3>
+                  <p className="text-gray-500 mb-4">
+                    Günlük 10 video analizi hakkınız var.
+                  </p>
+                </div>
+
+                <div className="bg-indigo-50 p-4 rounded-xl">
+                  <h3 className="font-semibold text-indigo-800 mb-2">Premium'a Yükselt</h3>
+                  <p className="text-sm text-indigo-600 mb-4">
+                    Sınırsız analiz ve tüm özelliklere erişmek için premium üye olun.
+                  </p>
+                  <Link
+                    href="/premium"
+                    className="block w-full py-3 bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-center font-semibold rounded-xl hover:opacity-90 transition-all"
+                  >
+                    Planları Görüntüle
+                  </Link>
+                </div>
               </div>
             )}
           </div>
