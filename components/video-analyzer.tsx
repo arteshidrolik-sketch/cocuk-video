@@ -45,48 +45,26 @@ export default function VideoAnalyzer({ video, onClose, onApproved, onQuotaExcee
         return;
       }
 
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      let partialRead = '';
+      const parsed = await response.json();
 
-      while (true) {
-        const { done, value } = await reader!.read();
-        if (done) break;
-
-        partialRead += decoder.decode(value, { stream: true });
-        const lines = partialRead.split('\n');
-        partialRead = lines.pop() || '';
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            if (data === '[DONE]') continue;
-            try {
-              const parsed = JSON.parse(data);
-              if (parsed.status === 'processing') {
-                setMessage('Analiz ediliyor...');
-              } else if (parsed.status === 'completed') {
-                if (parsed.decision === 'UYGUN') {
-                  setStatus('approved');
-                  setMessage('Video uygun bulundu! 🎉');
-                  setReason(parsed.reason || '');
-                  setTimeout(() => onApproved(), 1500);
-                } else if (parsed.decision === 'UYGUN_DEGIL') {
-                  setStatus('rejected');
-                  setMessage('Bu video yaş grubunuz için uygun değil');
-                  setReason(parsed.reason || '');
-                } else {
-                  setStatus('pending');
-                  setMessage('Bu video ebeveyn onayı bekliyor');
-                  setReason(parsed.reason || '');
-                }
-              } else if (parsed.status === 'error') {
-                setStatus('error');
-                setMessage(parsed.message || 'Analiz sırasında hata oluştu');
-              }
-            } catch {}
-          }
+      if (parsed.status === 'completed') {
+        if (parsed.decision === 'UYGUN') {
+          setStatus('approved');
+          setMessage('Video uygun bulundu! 🎉');
+          setReason(parsed.reason || '');
+          setTimeout(() => onApproved(), 1500);
+        } else if (parsed.decision === 'UYGUN_DEGIL') {
+          setStatus('rejected');
+          setMessage('Bu video yaş grubunuz için uygun değil');
+          setReason(parsed.reason || '');
+        } else {
+          setStatus('pending');
+          setMessage('Bu video ebeveyn onayı bekliyor');
+          setReason(parsed.reason || '');
         }
+      } else if (parsed.status === 'error') {
+        setStatus('error');
+        setMessage(parsed.message || 'Analiz sırasında hata oluştu');
       }
     } catch (error) {
       console.error('Analysis error:', error);

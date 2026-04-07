@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { checkQuota, incrementQuota } from '@/lib/quota-check';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 30;
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,23 +34,12 @@ export async function POST(request: NextRequest) {
           approvedBy: 'channel',
         },
       });
-      // Increment quota for approved channel hits too
       await incrementQuota(request);
-      // Return SSE format so client stream reader can parse it
-      const encoder = new TextEncoder();
-      const finalData = JSON.stringify({
+      return NextResponse.json({
         status: 'completed',
         decision: 'UYGUN',
         reason: 'Bu video onaylı bir kanaldan gelmektedir.',
         detectedIssues: [],
-      });
-      const body = encoder.encode(`data: ${finalData}\n\n`);
-      return new Response(body, {
-        headers: {
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          'Connection': 'keep-alive',
-        },
       });
     }
 
@@ -100,125 +90,82 @@ Video Bilgileri:
   "detectedIssues": ["sorun1", "sorun2"] veya []
 }`;
 
-    // Stream LLM response
-    const encoder = new TextEncoder();
-    const stream = new ReadableStream({
-      async start(controller) {
-        try {
-          const response = await fetch('https://apps.abacus.ai/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${process.env.ABACUSAI_API_KEY}`,
-            },
-            body: JSON.stringify({
-              model: 'gpt-4.1-mini',
-              messages: [{ role: 'user', content: prompt }],
-              stream: true,
-              max_tokens: 500,
-              response_format: { type: 'json_object' },
-            }),
-          });
-
-          const reader = response.body?.getReader();
-          const decoder = new TextDecoder();
-          let buffer = '';
-          let partialRead = '';
-
-          while (true) {
-            const { done, value } = await reader!.read();
-            if (done) break;
-            partialRead += decoder.decode(value, { stream: true });
-            const lines = partialRead.split('\n');
-            partialRead = lines.pop() || '';
-
-            for (const line of lines) {
-              if (line.startsWith('data: ')) {
-                const data = line.slice(6);
-                if (data === '[DONE]') {
-                  try {
-                    const result = JSON.parse(buffer);
-                    const decision = result.decision || 'BELIRSIZ';
-                    const reason = result.reason || 'Analiz tamamlandı';
-                    const detectedIssues = result.detectedIssues || [];
-
-                    // Veritabanına kaydet
-                    if (decision === 'BELIRSIZ') {
-                      await prisma.pendingApproval.upsert({
-                        where: { videoId },
-                        update: {
-                          videoTitle: title,
-                          channelId,
-                          channelName,
-                          thumbnailUrl,
-                          analysisResult: { decision, reason, detectedIssues },
-                        },
-                        create: {
-                          videoId,
-                          videoTitle: title,
-                          channelId,
-                          channelName,
-                          thumbnailUrl,
-                          analysisResult: { decision, reason, detectedIssues },
-                        },
-                      });
-                    } else {
-                      await prisma.videoHistory.create({
-                        data: {
-                          videoId,
-                          videoTitle: title,
-                          channelId,
-                          channelName,
-                          thumbnailUrl,
-                          status: decision === 'UYGUN' ? 'approved' : 'rejected',
-                          analysisResult: { decision, reason, detectedIssues },
-                          approvedBy: 'system',
-                        },
-                      });
-                    }
-
-                    // Increment quota after successful analysis
-                    await incrementQuota(request);
-
-                    const finalData = JSON.stringify({
-                      status: 'completed',
-                      decision,
-                      reason,
-                      detectedIssues,
-                    });
-                    controller.enqueue(encoder.encode(`data: ${finalData}\n\n`));
-                  } catch (e) {
-                    console.error('JSON parse error:', e);
-                    controller.enqueue(encoder.encode(`data: ${JSON.stringify({ status: 'error', message: 'Analiz hatası' })}\n\n`));
-                  }
-                  return;
-                }
-                try {
-                  const parsed = JSON.parse(data);
-                  buffer += parsed.choices?.[0]?.delta?.content || '';
-                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ status: 'processing', message: 'Analiz ediliyor...' })}\n\n`));
-                } catch {}
-              }
-            }
-          }
-        } catch (error) {
-          console.error('Stream error:', error);
-          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ status: 'error', message: 'Analiz hatası' })}\n\n`));
-        } finally {
-          controller.close();
-        }
-      },
-    });
-
-    return new Response(stream, {
+    // LLM çağrısı (non-streaming)
+    const llmResponse = await fetch('https://apps.abacus.ai/v1/chat/completions', {
+      method: 'POST',
       headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.ABACUSAI_API_KEY}`,
       },
+      body: JSON.stringify({
+        model: 'gpt-4.1-mini',
+        messages: [{ role: 'user', content: prompt }],
+        stream: false,
+        max_tokens: 500,
+        response_format: { type: 'json_object' },
+      }),
     });
+
+    const llmData = await llmResponse.json();
+    const content = llmData.choices?.[0]?.message?.content || '{}';
+
+    let result;
+    try {
+      result = JSON.parse(content);
+    } catch {
+      result = { decision: 'BELIRSIZ', reason: 'Analiz sonucu işlenemedi', detectedIssues: [] };
+    }
+
+    const decision = result.decision || 'BELIRSIZ';
+    const reason = result.reason || 'Analiz tamamlandı';
+    const detectedIssues = result.detectedIssues || [];
+
+    // Veritabanına kaydet
+    if (decision === 'BELIRSIZ') {
+      await prisma.pendingApproval.upsert({
+        where: { videoId },
+        update: {
+          videoTitle: title,
+          channelId,
+          channelName,
+          thumbnailUrl,
+          analysisResult: { decision, reason, detectedIssues },
+        },
+        create: {
+          videoId,
+          videoTitle: title,
+          channelId,
+          channelName,
+          thumbnailUrl,
+          analysisResult: { decision, reason, detectedIssues },
+        },
+      });
+    } else {
+      await prisma.videoHistory.create({
+        data: {
+          videoId,
+          videoTitle: title,
+          channelId,
+          channelName,
+          thumbnailUrl,
+          status: decision === 'UYGUN' ? 'approved' : 'rejected',
+          analysisResult: { decision, reason, detectedIssues },
+          approvedBy: 'system',
+        },
+      });
+    }
+
+    await incrementQuota(request);
+
+    return NextResponse.json({
+      status: 'completed',
+      decision,
+      reason,
+      detectedIssues,
+    });
+
   } catch (error) {
     console.error('Analyze error:', error);
-    return NextResponse.json({ error: 'Analiz başarısız' }, { status: 500 });
+    return NextResponse.json({ status: 'error', message: 'Analiz başarısız' }, { status: 500 });
   }
 }
