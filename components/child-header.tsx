@@ -113,9 +113,10 @@ export default function ChildHeader({ onSearch, searchQuery }: ChildHeaderProps)
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-indigo-400" />
               <button
                 type="submit"
-                className="absolute right-2 top-1/2 -translate-y-1/2 bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-4 py-2 rounded-xl font-semibold hover:shadow-lg transition-all"
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded-xl flex items-center justify-center hover:shadow-lg transition-all"
+                title="Ara"
               >
-                Ara
+                <Search className="w-5 h-5" />
               </button>
             </div>
             
