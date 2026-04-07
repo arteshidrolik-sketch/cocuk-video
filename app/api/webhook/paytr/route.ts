@@ -14,14 +14,15 @@ export async function POST(request: NextRequest) {
     const currency = body.get('currency') as string;
     const hash = body.get('hash') as string;
 
-    // Hash doğrulama
+    // Hash doğrulama - PayTR iFrame API callback format
+    // hash = merchant_oid + merchant_salt + status + total_amount
     const merchantKey = process.env.PAYTR_MERCHANT_KEY!;
     const merchantSalt = process.env.PAYTR_MERCHANT_SALT!;
     
-    const hashStr = `${merchantOid}${paymentAmount}${totalAmount}${currency}${status}`;
+    const hashStr = `${merchantOid}${merchantSalt}${status}${totalAmount}`;
     const calculatedHash = crypto
       .createHmac('sha256', merchantKey)
-      .update(hashStr + merchantSalt)
+      .update(hashStr)
       .digest('base64');
 
     if (hash !== calculatedHash) {
