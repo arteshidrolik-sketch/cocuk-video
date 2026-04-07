@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     const merchantSalt = process.env.PAYTR_MERCHANT_SALT!;
 
     const userIp = getClientIP(request);
-    const merchantOid = `${plan}-${Date.now()}`;
+    const merchantOid = `${plan}${Date.now()}`;
     const paymentAmount = PLANS[plan].amount;
     const paymentType = 'card';
     const installmentCount = '0';

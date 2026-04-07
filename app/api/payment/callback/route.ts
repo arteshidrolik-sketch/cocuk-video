@@ -28,8 +28,8 @@ export async function POST(request: NextRequest) {
     }
 
     if (status === 'success') {
-      // Extract plan from merchant_oid (e.g. "PLUS-1234567890")
-      const plan = merchantOid.split('-')[0];
+      // Extract plan from merchant_oid (e.g. "PLUS1234567890")
+      const plan = merchantOid.replace(/\d+$/, '');
 
       // Update or create subscription
       const endDate = new Date();
