@@ -40,7 +40,8 @@ export async function POST(request: NextRequest) {
       JSON.stringify([[PLANS[plan].name, (parseInt(paymentAmount) / 100).toFixed(2), 1]])
     ).toString('base64');
 
-    const hashStr = `${merchantId}${userIp}${merchantOid}${email}${paymentAmount}${paymentType}${installmentCount}${currency}${testMode}${nonThreeD}`;
+    // PayTR hash string format: merchant_id + user_ip + merchant_oid + email + payment_amount + user_basket + no_installment + max_installment + currency + test_mode
+    const hashStr = `${merchantId}${userIp}${merchantOid}${email}${paymentAmount}${userBasket}${installmentCount}${installmentCount}${currency}${testMode}${nonThreeD}`;
     const paytrToken = crypto
       .createHmac('sha256', merchantKey)
       .update(hashStr + merchantSalt)
