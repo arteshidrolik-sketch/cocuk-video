@@ -79,6 +79,10 @@ export default function PremiumPage() {
     setShowEmailForm(true);
     setPaytrToken(null);
     setError(null);
+    // Scroll to email form
+    setTimeout(() => {
+      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }, 100);
   };
 
   const handlePayment = async () => {
