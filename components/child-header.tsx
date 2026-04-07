@@ -71,7 +71,7 @@ export default function ChildHeader({ onSearch, searchQuery }: ChildHeaderProps)
           <div className="flex items-center gap-3">
             {/* Geri Butonu - Logo Yerine */}
             <button
-              onClick={() => window.history.back()}
+              onClick={() => router.back()}
               className="flex items-center gap-2 group"
               title="Geri Dön"
             >
