@@ -35,8 +35,8 @@ export async function POST(request: NextRequest) {
 
     const hashStr = `${merchantId}${userIp}${merchantOid}${email}${paymentAmount}${paymentType}${installmentCount}${currency}${testMode}${nonThreeD}`;
     const paytrToken = crypto
-      .createHmac('sha256', merchantKey + merchantSalt)
-      .update(hashStr)
+      .createHmac('sha256', merchantKey)
+      .update(hashStr + merchantSalt)
       .digest('base64');
 
     const params = new URLSearchParams({
