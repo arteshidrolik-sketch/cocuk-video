@@ -56,6 +56,23 @@ export async function checkQuota(request: NextRequest): Promise<QuotaCheckResult
     return { allowed: true, isPremium: true, isTrialActive: false, dailyVideoCount: quota.dailyVideoCount, freeVideoLimit };
   }
 
+  // Check active subscription in Subscription table
+  const activeSubscription = await prisma.subscription.findFirst({
+    where: {
+      userId: ip,
+      status: 'ACTIVE',
+      endDate: { gt: new Date() },
+    },
+  });
+  if (activeSubscription) {
+    // Sync isPremium flag
+    await prisma.userQuota.update({
+      where: { userId: ip },
+      data: { isPremium: true },
+    });
+    return { allowed: true, isPremium: true, isTrialActive: false, dailyVideoCount: quota.dailyVideoCount, freeVideoLimit };
+  }
+
   // Check active trial
   let isTrialActive = false;
   let trialEndsAt: Date | undefined;

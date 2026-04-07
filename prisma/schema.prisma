@@ -64,6 +64,20 @@ model VideoHistory {
   @@map("video_history")
 }
 
+model Subscription {
+  id              Int      @id @default(autoincrement())
+  userId          String   @map("user_id")
+  plan            String   @default("STARTER") // STARTER, PLUS, INSTITUTION
+  status          String   @default("ACTIVE")  // ACTIVE, CANCELLED, EXPIRED
+  startDate       DateTime @default(now()) @map("start_date")
+  endDate         DateTime @map("end_date")
+  paytrPaymentId  String?  @map("paytr_payment_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("subscriptions")
+}
+
 model PendingApproval {
   id              Int      @id @default(autoincrement())
   videoId         String   @unique @map("video_id")
