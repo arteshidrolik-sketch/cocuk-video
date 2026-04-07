@@ -295,6 +295,7 @@ export default function HomePage() {
                   type={showPassword ? 'text' : 'password'}
                   value={setupPassword}
                   onChange={(e) => setSetupPassword(e.target.value)}
+                  autoComplete="new-password"
                   className="w-full pl-10 pr-10 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                   placeholder="Şifre (en az 4 karakter)"
                 />
@@ -318,6 +319,7 @@ export default function HomePage() {
                   type={showPassword ? 'text' : 'password'}
                   value={setupConfirm}
                   onChange={(e) => setSetupConfirm(e.target.value)}
+                  autoComplete="new-password"
                   className="w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                   placeholder="Şifreyi tekrar girin"
                 />
