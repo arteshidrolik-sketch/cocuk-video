@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.formData();
-    
+
     const merchantOid = body.get('merchant_oid') as string;
     const status = body.get('status') as string;
     const totalAmount = body.get('total_amount') as string;
@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     // hash = merchant_oid + merchant_salt + status + total_amount
     const merchantKey = process.env.PAYTR_MERCHANT_KEY!;
     const merchantSalt = process.env.PAYTR_MERCHANT_SALT!;
-    
+
     const hashStr = `${merchantOid}${merchantSalt}${status}${totalAmount}`;
     const calculatedHash = crypto
       .createHmac('sha256', merchantKey)
@@ -35,13 +35,45 @@ export async function POST(request: NextRequest) {
       // Plan tipini merchant_oid'den çıkar
       const planType = merchantOid.startsWith('STARTER') ? 'STARTER' :
                        merchantOid.startsWith('PLUS') ? 'PLUS' : 'INSTITUTION';
-      
-      // Kullanıcıyı bul veya oluştur
-      // Burada email bilgisi olmadığı için merchant_oid'den kullanıcıyı bulmak gerek
-      // Şimdilik basit bir log atalım
-      console.log('Payment successful:', { merchantOid, planType, paymentAmount });
-      
-      // TODO: Kullanıcı aboneliğini güncelle
+
+      // Bitiş tarihi hesapla (1 ay sonra)
+      const endDate = new Date();
+      endDate.setMonth(endDate.getMonth() + 1);
+
+      // Aboneliği oluştur/güncelle
+      // merchant_oid formatı: PLAN{timestamp} şeklinde
+      // Kullanıcıyı email ile ilişkilendirmek için payment'de email'i de kaydetmek gerekir
+      // Şimdilik merchant_oid ile ilişkilendiriyoruz
+
+      await prisma.subscription.create({
+        data: {
+          userId: merchantOid, // Geçici olarak merchant_oid kullanıyoruz
+          plan: planType,
+          status: 'ACTIVE',
+          startDate: new Date(),
+          endDate: endDate,
+          paytrPaymentId: merchantOid,
+        },
+      });
+
+      // UserQuota'yu güncelle - premium yap
+      await prisma.userQuota.upsert({
+        where: { userId: merchantOid },
+        update: {
+          isPremium: true,
+        },
+        create: {
+          userId: merchantOid,
+          isPremium: true,
+          dailyVideoCount: 0,
+        },
+      });
+
+      console.log('Payment successful - Subscription created:', {
+        merchantOid,
+        planType,
+        endDate,
+      });
     }
 
     // PayTR'a başarılı yanıt gönder
