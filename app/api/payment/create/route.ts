@@ -20,7 +20,14 @@ export async function POST(request: NextRequest) {
     const merchantKey = process.env.PAYTR_MERCHANT_KEY!;
     const merchantSalt = process.env.PAYTR_MERCHANT_SALT!;
 
-    const userIp = getClientIP(request);
+    // PayTR IPv4 gerektirir
+    let userIp = getClientIP(request);
+    // IPv6 mapped IPv4 temizle (::ffff:1.2.3.4 → 1.2.3.4)
+    if (userIp.startsWith('::ffff:')) userIp = userIp.slice(7);
+    // Localhost veya IPv6 → PayTR test IP kullan
+    if (userIp === '::1' || userIp === '127.0.0.1' || !userIp.match(/^\d+\.\d+\.\d+\.\d+$/)) {
+      userIp = '1.2.3.4';
+    }
     const merchantOid = `${plan}${Date.now()}`;
     const paymentAmount = PLANS[plan].amount;
     const paymentType = 'card';
