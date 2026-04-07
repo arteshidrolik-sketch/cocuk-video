@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { Sparkles, Search, Play, Star, Shield, Lock, Eye, EyeOff, User, Crown, X, Zap } from 'lucide-react';
 import ChildHeader from '@/components/child-header';
 import VideoCard from '@/components/video-card';
@@ -17,6 +18,7 @@ interface VideoItem {
 }
 
 export default function HomePage() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [recentVideos, setRecentVideos] = useState<VideoItem[]>([]);
@@ -107,19 +109,23 @@ export default function HomePage() {
     }
   }, [needsSetup, checkingSetup]);
 
-  // Fetch trial/quota info
+  // Fetch trial/quota info — redirect to /premium if trial expired
   useEffect(() => {
     const fetchTrialInfo = async () => {
       try {
         const res = await fetch('/api/trial');
         const data = await res.json();
         setTrialInfo(data);
+        // Trial kullanılmış, süresi dolmuş ve premium değilse → /premium'a yönlendir
+        if (data.trialUsed && !data.isTrialActive && !data.isPremium) {
+          router.push('/premium');
+        }
       } catch {
         // ignore
       }
     };
     fetchTrialInfo();
-  }, []);
+  }, [router]);
 
   const handleStartTrial = async () => {
     setTrialLoading(true);
@@ -147,7 +153,13 @@ export default function HomePage() {
 
   const handleQuotaExceeded = (data: { dailyVideoCount: number; freeVideoLimit: number; trialUsed: boolean }) => {
     setQuotaData(data);
-    setShowPremiumModal(true);
+    if (data.trialUsed) {
+      // Deneme bitmiş → direkt /premium'a yönlendir
+      router.push('/premium');
+    } else {
+      // Deneme henüz kullanılmamış → modal göster (trial başlatma seçeneği)
+      setShowPremiumModal(true);
+    }
   };
 
   const handleSetup = async (e: React.FormEvent) => {
