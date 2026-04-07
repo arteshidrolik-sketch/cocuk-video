@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Lock, Shield, Search, ArrowLeft } from 'lucide-react';
 import ParentLogin from './parent-login';
 import { useRouter } from 'next/navigation';
@@ -13,13 +13,44 @@ interface ChildHeaderProps {
 export default function ChildHeader({ onSearch, searchQuery }: ChildHeaderProps) {
   const [showParentLogin, setShowParentLogin] = useState(false);
   const [localQuery, setLocalQuery] = useState(searchQuery);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const router = useRouter();
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Önerileri getir
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      if (localQuery.length < 2) {
+        setSuggestions([]);
+        return;
+      }
+      
+      try {
+        const res = await fetch(`/api/youtube/suggestions?q=${encodeURIComponent(localQuery)}`);
+        const data = await res.json();
+        setSuggestions(data.suggestions || []);
+      } catch {
+        setSuggestions([]);
+      }
+    };
+
+    const timeout = setTimeout(fetchSuggestions, 300);
+    return () => clearTimeout(timeout);
+  }, [localQuery]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setShowSuggestions(false);
     if (localQuery.trim()) {
       onSearch(localQuery.trim());
     }
+  };
+
+  const handleSuggestionClick = (suggestion: string) => {
+    setLocalQuery(suggestion);
+    setShowSuggestions(false);
+    onSearch(suggestion);
   };
 
   return (
@@ -52,14 +83,21 @@ export default function ChildHeader({ onSearch, searchQuery }: ChildHeaderProps)
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="flex-1 max-w-xl">
+          <form onSubmit={handleSubmit} className="flex-1 max-w-xl relative">
             <div className="relative">
               <input
+                ref={inputRef}
                 type="text"
                 value={localQuery}
-                onChange={(e) => setLocalQuery(e.target.value)}
+                onChange={(e) => {
+                  setLocalQuery(e.target.value);
+                  setShowSuggestions(true);
+                }}
+                onFocus={() => setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                 placeholder="Video ara... 🎬"
                 className="w-full py-3 px-5 pl-12 rounded-2xl border-2 border-indigo-200 focus:border-indigo-400 bg-white text-lg transition-all"
+                autoComplete="off"
               />
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-indigo-400" />
               <button
@@ -69,6 +107,23 @@ export default function ChildHeader({ onSearch, searchQuery }: ChildHeaderProps)
                 Ara
               </button>
             </div>
+            
+            {/* Öneriler Dropdown */}
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-indigo-100 overflow-hidden z-50">
+                {suggestions.map((suggestion, index) => (
+                  <button
+                    key={index}
+                    type="button"
+                    onClick={() => handleSuggestionClick(suggestion)}
+                    className="w-full px-4 py-3 text-left hover:bg-indigo-50 transition-colors flex items-center gap-3 border-b border-gray-100 last:border-0"
+                  >
+                    <Search className="w-4 h-4 text-indigo-400 flex-shrink-0" />
+                    <span className="text-gray-700 truncate">{suggestion}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </form>
 
           <button

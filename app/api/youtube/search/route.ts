@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
       part: 'snippet',
       q: query,
       type: 'video',
-      maxResults: '12',
+      maxResults: '8',
       safeSearch: 'strict',
       key: apiKey,
     });
