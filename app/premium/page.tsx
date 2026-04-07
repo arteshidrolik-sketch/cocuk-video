@@ -74,34 +74,24 @@ export default function PremiumPage() {
     : null;
   const status = searchParams?.get('status');
 
-  const handleSelectPlan = (planId: string) => {
+  const handleSelectPlan = async (planId: string) => {
     setSelectedPlan(planId);
-    setShowEmailForm(true);
     setPaytrToken(null);
     setError(null);
-    // Scroll to email form
-    setTimeout(() => {
-      window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-    }, 100);
-  };
-
-  const handlePayment = async () => {
-    if (!selectedPlan || !email) return;
+    
+    // Direkt ödemeyi başlat
     setLoading(true);
-    setError(null);
-
     try {
       const res = await fetch('/api/payment/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan: selectedPlan, email }),
+        body: JSON.stringify({ plan: planId, email }),
       });
 
       const data = await res.json();
 
       if (data.token) {
         setPaytrToken(data.token);
-        setShowEmailForm(false);
 
         // Load PayTR iFrame script
         const script = document.createElement('script');
@@ -113,6 +103,11 @@ export default function PremiumPage() {
           }
         };
         document.head.appendChild(script);
+        
+        // Scroll to iFrame
+        setTimeout(() => {
+          window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }, 100);
       } else {
         setError(data.error || 'Ödeme başlatılamadı');
       }
@@ -122,6 +117,8 @@ export default function PremiumPage() {
       setLoading(false);
     }
   };
+
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-950 to-slate-900 py-12 px-4">
@@ -219,60 +216,24 @@ export default function PremiumPage() {
         </div>
       )}
 
-      {/* Email Form */}
-      {showEmailForm && !paytrToken && (
-        <div className="max-w-md mx-auto bg-slate-800/60 border border-slate-700/50 rounded-2xl p-6">
-          <h3 className="text-white font-bold text-lg mb-4">
-            Ödeme Bilgileri —{' '}
-            <span className="text-purple-400">{plans.find((p) => p.id === selectedPlan)?.name}</span>
-          </h3>
+      {/* Loading State */}
+      {loading && (
+        <div className="max-w-md mx-auto bg-slate-800/60 border border-slate-700/50 rounded-2xl p-6 text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-purple-400 mx-auto mb-4" />
+          <p className="text-slate-300">Ödeme sayfası hazırlanıyor...</p>
+        </div>
+      )}
 
-          <div className="mb-4">
-            <label className="block text-slate-400 text-sm mb-2">E-posta adresi</label>
-            <input
-              type="email"
-              value={email}
-              readOnly
-              className="w-full bg-slate-900/60 border border-slate-600 rounded-xl px-4 py-3 text-slate-400 cursor-not-allowed"
-            />
-            <p className="text-slate-500 text-xs mt-2">Fatura ve bildirimler için kullanılacaktır</p>
-          </div>
-
-          {error && (
-            <div className="bg-red-500/20 border border-red-500/40 rounded-xl p-3 mb-4">
-              <p className="text-red-300 text-sm">{error}</p>
-            </div>
-          )}
-
-          <div className="flex gap-3">
-            <button
-              onClick={() => { setShowEmailForm(false); setSelectedPlan(null); }}
-              className="flex-1 py-3 rounded-xl bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors text-sm font-medium"
-            >
-              İptal
-            </button>
-            <button
-              onClick={handlePayment}
-              disabled={loading}
-              className="flex-2 flex-1 py-3 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Yükleniyor...
-                </>
-              ) : (
-                <>
-                  <Shield className="w-4 h-4" />
-                  Güvenli Öde
-                </>
-              )}
-            </button>
-          </div>
-
-          <p className="text-slate-500 text-xs text-center mt-3">
-            256-bit SSL ile güvenli ödeme • PayTR altyapısı
-          </p>
+      {/* Error State */}
+      {error && !paytrToken && (
+        <div className="max-w-md mx-auto bg-red-500/20 border border-red-500/40 rounded-xl p-4 text-center">
+          <p className="text-red-300">{error}</p>
+          <button
+            onClick={() => { setError(null); setSelectedPlan(null); }}
+            className="mt-3 px-4 py-2 bg-slate-700 text-slate-300 rounded-lg text-sm"
+          >
+            Geri Dön
+          </button>
         </div>
       )}
 
