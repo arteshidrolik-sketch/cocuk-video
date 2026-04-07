@@ -9,110 +9,62 @@ export function getClientIP(request: NextRequest): string {
   return '127.0.0.1';
 }
 
-function isToday(date: Date): boolean {
-  const now = new Date();
-  return (
-    date.getFullYear() === now.getFullYear() &&
-    date.getMonth() === now.getMonth() &&
-    date.getDate() === now.getDate()
-  );
-}
-
 export interface QuotaCheckResult {
   allowed: boolean;
   isPremium: boolean;
-  isTrialActive: boolean;
-  trialEndsAt?: Date;
-  dailyVideoCount: number;
+  isTrialActive: false;
+  totalVideoCount: number;
   freeVideoLimit: number;
   response?: NextResponse;
 }
 
+const FREE_LIMIT = 10;
+
 export async function checkQuota(request: NextRequest): Promise<QuotaCheckResult> {
   const ip = getClientIP(request);
-
-  // Get free video limit from settings
-  const settings = await prisma.settings.findFirst();
-  const freeVideoLimit = settings?.freeVideoLimit ?? 5;
 
   // Get or create user quota
   let quota = await prisma.userQuota.findUnique({ where: { userId: ip } });
   if (!quota) {
-    quota = await prisma.userQuota.create({
-      data: { userId: ip },
-    });
-  }
-
-  // Reset daily count if it's a new day
-  if (!isToday(quota.lastResetDate)) {
-    quota = await prisma.userQuota.update({
-      where: { userId: ip },
-      data: { dailyVideoCount: 0, lastResetDate: new Date() },
-    });
+    quota = await prisma.userQuota.create({ data: { userId: ip } });
   }
 
   // Premium users — no limits
   if (quota.isPremium) {
-    return { allowed: true, isPremium: true, isTrialActive: false, dailyVideoCount: quota.dailyVideoCount, freeVideoLimit };
+    return { allowed: true, isPremium: true, isTrialActive: false, totalVideoCount: quota.dailyVideoCount, freeVideoLimit: FREE_LIMIT };
   }
 
-  // Check active subscription in Subscription table
+  // Check active subscription
   const activeSubscription = await prisma.subscription.findFirst({
-    where: {
-      userId: ip,
-      status: 'ACTIVE',
-      endDate: { gt: new Date() },
-    },
+    where: { userId: ip, status: 'ACTIVE', endDate: { gt: new Date() } },
   });
   if (activeSubscription) {
-    // Sync isPremium flag
-    await prisma.userQuota.update({
-      where: { userId: ip },
-      data: { isPremium: true },
-    });
-    return { allowed: true, isPremium: true, isTrialActive: false, dailyVideoCount: quota.dailyVideoCount, freeVideoLimit };
+    await prisma.userQuota.update({ where: { userId: ip }, data: { isPremium: true } });
+    return { allowed: true, isPremium: true, isTrialActive: false, totalVideoCount: quota.dailyVideoCount, freeVideoLimit: FREE_LIMIT };
   }
 
-  // Check active trial
-  let isTrialActive = false;
-  let trialEndsAt: Date | undefined;
-  if (quota.trialUsed && quota.trialStartDate) {
-    trialEndsAt = new Date(quota.trialStartDate.getTime() + 24 * 60 * 60 * 1000);
-    isTrialActive = new Date() < trialEndsAt;
-  }
-
-  if (isTrialActive) {
-    return { allowed: true, isPremium: false, isTrialActive: true, trialEndsAt, dailyVideoCount: quota.dailyVideoCount, freeVideoLimit };
-  }
-
-  // Check daily quota
-  if (quota.dailyVideoCount >= freeVideoLimit) {
+  // 10 ücretsiz video kontrolü (toplam, günlük değil)
+  if (quota.dailyVideoCount >= FREE_LIMIT) {
     const response = NextResponse.json(
       {
         error: 'quota_exceeded',
-        message: `Günlük ${freeVideoLimit} video limitine ulaştınız. Premium'a geçerek sınırsız analiz yapabilirsiniz.`,
-        dailyVideoCount: quota.dailyVideoCount,
-        freeVideoLimit,
-        trialUsed: quota.trialUsed,
+        message: `${FREE_LIMIT} ücretsiz video hakkınızı kullandınız. Devam etmek için bir paket seçin.`,
+        totalVideoCount: quota.dailyVideoCount,
+        freeVideoLimit: FREE_LIMIT,
+        trialUsed: true,
       },
       { status: 429 }
     );
-    return { allowed: false, isPremium: false, isTrialActive: false, dailyVideoCount: quota.dailyVideoCount, freeVideoLimit, response };
+    return { allowed: false, isPremium: false, isTrialActive: false, totalVideoCount: quota.dailyVideoCount, freeVideoLimit: FREE_LIMIT, response };
   }
 
-  return { allowed: true, isPremium: false, isTrialActive: false, dailyVideoCount: quota.dailyVideoCount, freeVideoLimit };
+  return { allowed: true, isPremium: false, isTrialActive: false, totalVideoCount: quota.dailyVideoCount, freeVideoLimit: FREE_LIMIT };
 }
 
 export async function incrementQuota(request: NextRequest): Promise<void> {
   const ip = getClientIP(request);
   const quota = await prisma.userQuota.findUnique({ where: { userId: ip } });
   if (!quota || quota.isPremium) return;
-
-  // Don't increment during active trial
-  if (quota.trialUsed && quota.trialStartDate) {
-    const trialEndsAt = new Date(quota.trialStartDate.getTime() + 24 * 60 * 60 * 1000);
-    if (new Date() < trialEndsAt) return;
-  }
 
   await prisma.userQuota.update({
     where: { userId: ip },
