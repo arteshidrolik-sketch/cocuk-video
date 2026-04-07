@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { Lock, Shield, Search } from 'lucide-react';
+import { Lock, Shield, Search, ArrowLeft } from 'lucide-react';
 import ParentLogin from './parent-login';
+import { useRouter } from 'next/navigation';
 
 interface ChildHeaderProps {
   onSearch: (query: string) => void;
@@ -12,6 +13,7 @@ interface ChildHeaderProps {
 export default function ChildHeader({ onSearch, searchQuery }: ChildHeaderProps) {
   const [showParentLogin, setShowParentLogin] = useState(false);
   const [localQuery, setLocalQuery] = useState(searchQuery);
+  const router = useRouter();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,9 +27,20 @@ export default function ChildHeader({ onSearch, searchQuery }: ChildHeaderProps)
       <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md shadow-lg">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center shadow-lg">
+            <button
+              onClick={() => router.push('/')}
+              className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center shadow-lg hover:opacity-90 transition-all"
+              title="Ana Sayfa"
+            >
               <Shield className="w-6 h-6 text-white" />
-            </div>
+            </button>
+            <button
+              onClick={() => router.back()}
+              className="p-2 rounded-xl bg-gray-100 hover:bg-gray-200 transition-all"
+              title="Geri"
+            >
+              <ArrowLeft className="w-5 h-5 text-gray-600" />
+            </button>
             <span className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent hidden sm:block">
               GüvenliVideo
             </span>
