@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       userIp = '1.2.3.4';
     }
     const merchantOid = `${plan}${Date.now()}`;
-    const paymentAmount = PLANS[plan].amount;
+    const paymentAmount = String(PLANS[plan].amount);
     const paymentType = 'card';
     const installmentCount = '0';
     const currency = 'TL';
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     const nonThreeD = '0';
 
     const userBasket = Buffer.from(
-      JSON.stringify([[PLANS[plan].name, (paymentAmount / 100).toFixed(2), 1]])
+      JSON.stringify([[PLANS[plan].name, (parseInt(paymentAmount) / 100).toFixed(2), 1]])
     ).toString('base64');
 
     const hashStr = `${merchantId}${userIp}${merchantOid}${email}${paymentAmount}${paymentType}${installmentCount}${currency}${testMode}${nonThreeD}`;
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
       user_ip: userIp,
       merchant_oid: merchantOid,
       email: email || 'test@test.com',
-      payment_amount: String(paymentAmount),
+      payment_amount: paymentAmount,
       paytr_token: paytrToken,
       user_basket: userBasket,
       debug_on: '1',
@@ -81,8 +81,8 @@ export async function POST(request: NextRequest) {
     if (data.status === 'success') {
       return NextResponse.json({ token: data.token, merchantOid });
     } else {
-      console.error('PayTR token error:', data);
-      return NextResponse.json({ error: data.reason || 'Token alınamadı' }, { status: 500 });
+      console.error('PayTR token error:', JSON.stringify(data));
+      return NextResponse.json({ error: data.reason || 'Token alınamadı', debug: data }, { status: 500 });
     }
   } catch (error) {
     console.error('Payment create error:', error);
