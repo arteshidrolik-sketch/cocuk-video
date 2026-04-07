@@ -30,6 +30,7 @@ export default function HomePage() {
   
   // Quota / freemium state
   const [videoCount, setVideoCount] = useState(0);
+  const [isPremium, setIsPremium] = useState(false);
 
   // Setup state
   const [checkingSetup, setCheckingSetup] = useState(true);
@@ -112,6 +113,7 @@ export default function HomePage() {
         const res = await fetch('/api/trial');
         const data = await res.json();
         setVideoCount(data.dailyVideoCount ?? 0);
+        setIsPremium(data.isPremium ?? false);
         // Zaten 10 videoyu kullanmış ve premium değilse → /premium
         if (!data.isPremium && (data.dailyVideoCount ?? 0) >= 10) {
           router.push('/premium');
@@ -465,11 +467,19 @@ export default function HomePage() {
         />
       )}
 
-      {/* Ücretsiz video sayacı */}
-      {videoCount > 0 && videoCount < 10 && (
+      {/* Video sayacı - Premium kullanıcılarda gösterme */}
+      {!isPremium && videoCount > 0 && videoCount < 10 && (
         <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 bg-white/90 backdrop-blur border border-gray-200 text-gray-700 px-5 py-2.5 rounded-2xl shadow-lg flex items-center gap-2 text-sm">
           <Zap className="w-4 h-4 text-indigo-500" />
           <span>Ücretsiz: <strong>{videoCount}/10</strong> video kullanıldı</span>
+        </div>
+      )}
+      
+      {/* Premium badge */}
+      {isPremium && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 bg-gradient-to-r from-amber-400 to-orange-500 text-white px-5 py-2.5 rounded-2xl shadow-lg flex items-center gap-2 text-sm font-semibold">
+          <Star className="w-4 h-4" />
+          <span>Premium Üye ✨</span>
         </div>
       )}
     </div>

@@ -4,17 +4,47 @@ import { getClientIP } from '@/lib/quota-check';
 
 export const dynamic = 'force-dynamic';
 
-// GET: Deneme durumunu döndür
+// GET: Deneme durumunu döndür (IP veya userId bazlı)
 export async function GET(request: NextRequest) {
   const ip = getClientIP(request);
-
+  
+  // Önce IP bazlı kontrol et
   let quota = await prisma.userQuota.findUnique({ where: { userId: ip } });
+  
+  // IP bazlı bulunamazsa, abonelik tablosundan kontrol et (ödeme yapmış kullanıcılar)
+  let isPremium = quota?.isPremium ?? false;
+  let subscriptionInfo = null;
+  
+  if (!isPremium) {
+    // Son 30 gün içinde aktif abonelik var mı?
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const activeSubscription = await prisma.subscription.findFirst({
+      where: {
+        status: 'ACTIVE',
+        startDate: { gte: thirtyDaysAgo },
+      },
+      orderBy: { startDate: 'desc' },
+    });
+    
+    if (activeSubscription) {
+      isPremium = true;
+      subscriptionInfo = {
+        plan: activeSubscription.plan,
+        startDate: activeSubscription.startDate,
+        endDate: activeSubscription.endDate,
+      };
+    }
+  }
+
   if (!quota) {
     return NextResponse.json({
       trialUsed: false,
       isTrialActive: false,
       trialEndsAt: null,
-      isPremium: false,
+      isPremium,
+      subscriptionInfo,
     });
   }
 
@@ -30,8 +60,9 @@ export async function GET(request: NextRequest) {
     trialUsed: quota.trialUsed,
     isTrialActive,
     trialEndsAt: trialEndsAt?.toISOString() ?? null,
-    isPremium: quota.isPremium,
+    isPremium: isPremium || quota.isPremium,
     dailyVideoCount: quota.dailyVideoCount,
+    subscriptionInfo,
   });
 }
 
