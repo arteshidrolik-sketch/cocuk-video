@@ -116,6 +116,7 @@ export default function ParentLogin({ onClose }: ParentLoginProps) {
                 placeholder="Şifre"
                 className="w-full py-3 px-4 pr-12 rounded-xl border-2 border-gray-200 focus:border-indigo-400 transition-all"
                 autoFocus
+                autoComplete="new-password"
               />
               <button
                 type="button"
@@ -137,6 +138,7 @@ export default function ParentLogin({ onClose }: ParentLoginProps) {
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 placeholder="Şifreyi Tekrarla"
                 className="w-full py-3 px-4 rounded-xl border-2 border-gray-200 focus:border-indigo-400 transition-all"
+                autoComplete="new-password"
               />
             )}
 
