@@ -66,8 +66,8 @@ export default function PremiumPage() {
   const [loading, setLoading] = useState(false);
   const [paytrToken, setPaytrToken] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [email, setEmail] = useState('');
   const [showEmailForm, setShowEmailForm] = useState(false);
+  const email = 'sales@estechnic.com.tr'; // Sabit email adresi
 
   const searchParams = typeof window !== 'undefined'
     ? new URLSearchParams(window.location.search)
@@ -232,10 +232,10 @@ export default function PremiumPage() {
             <input
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="ornek@email.com"
-              className="w-full bg-slate-900/60 border border-slate-600 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 transition-colors"
+              readOnly
+              className="w-full bg-slate-900/60 border border-slate-600 rounded-xl px-4 py-3 text-slate-400 cursor-not-allowed"
             />
+            <p className="text-slate-500 text-xs mt-2">Fatura ve bildirimler için kullanılacaktır</p>
           </div>
 
           {error && (
@@ -253,7 +253,7 @@ export default function PremiumPage() {
             </button>
             <button
               onClick={handlePayment}
-              disabled={loading || !email}
+              disabled={loading}
               className="flex-2 flex-1 py-3 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white font-semibold text-sm hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading ? (
