@@ -116,17 +116,17 @@ export default function VideoAnalyzer({ video, onClose, onApproved, onQuotaExcee
           ) : (
             <div className="w-full h-full bg-gray-300" />
           )}
-          <button
-            onClick={onClose}
-            className="absolute top-3 right-3 p-2 bg-black/50 rounded-full text-white hover:bg-black/70 transition-all"
-          >
-            <X className="w-5 h-5" />
-          </button>
           {status === 'analyzing' && (
             <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
               <div className="w-24 h-24 border-4 border-white/30 border-t-white rounded-full animate-spin" />
             </div>
           )}
+          <button
+            onClick={onClose}
+            className="absolute top-3 right-3 p-2 bg-black/70 rounded-full text-white hover:bg-black transition-all z-10"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         <div className={`p-6 ${getStatusBg()}`}>
