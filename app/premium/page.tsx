@@ -7,7 +7,7 @@ const plans = [
   {
     id: 'STARTER',
     name: 'Başlangıç',
-    price: 49,
+    price: 249,
     description: 'Bireysel kullanım için ideal',
     icon: Zap,
     color: 'from-blue-500 to-cyan-500',
@@ -21,8 +21,8 @@ const plans = [
   },
   {
     id: 'PLUS',
-    name: 'Plus',
-    price: 89,
+    name: 'Profesyonel',
+    price: 349,
     description: 'Aileler için en popüler seçim',
     icon: Star,
     color: 'from-violet-500 to-purple-600',
@@ -39,7 +39,7 @@ const plans = [
   {
     id: 'INSTITUTION',
     name: 'Kurum',
-    price: 299,
+    price: 549,
     description: 'Okul ve kurumlar için',
     icon: Building2,
     color: 'from-emerald-500 to-teal-600',

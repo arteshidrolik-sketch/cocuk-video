@@ -3,9 +3,9 @@ import crypto from 'crypto';
 import { getClientIP } from '@/lib/quota-check';
 
 const PLANS: Record<string, { amount: number; name: string }> = {
-  STARTER: { amount: 4900, name: 'Başlangıç Paketi' },
-  PLUS: { amount: 8900, name: 'Plus Paketi' },
-  INSTITUTION: { amount: 29900, name: 'Kurum Paketi' },
+  STARTER: { amount: 24900, name: 'Başlangıç Paketi' },
+  PLUS: { amount: 34900, name: 'Profesyonel Paketi' },
+  INSTITUTION: { amount: 54900, name: 'Kurum Paketi' },
 };
 
 export async function POST(request: NextRequest) {
