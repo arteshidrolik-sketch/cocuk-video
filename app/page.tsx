@@ -182,8 +182,9 @@ export default function HomePage() {
       } else {
         setSetupError(data.error || 'Kayıt başarısız');
       }
-    } catch {
-      setSetupError('Bağlantı hatası');
+    } catch (err) {
+      console.error('Setup error:', err);
+      setSetupError('Bağlantı hatası: ' + (err instanceof Error ? err.message : 'Bilinmeyen hata'));
     } finally {
       setSetupLoading(false);
     }
