@@ -82,7 +82,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ token: data.token, merchantOid });
     } else {
       console.error('PayTR token error:', JSON.stringify(data));
-      return NextResponse.json({ error: data.reason || 'Token alınamadı', debug: data }, { status: 500 });
+      return NextResponse.json({
+        error: data.reason || 'Token alınamadı',
+        debug: data,
+        merchant_id_length: merchantId?.length,
+        merchant_key_length: merchantKey?.length,
+        merchant_salt_length: merchantSalt?.length,
+      }, { status: 500 });
     }
   } catch (error) {
     console.error('Payment create error:', error);
