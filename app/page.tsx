@@ -370,19 +370,37 @@ export default function HomePage() {
       <main className="max-w-6xl mx-auto px-4 py-8">
         {!hasSearched ? (
           <div className="text-center py-12">
-            <div className="inline-flex items-center justify-center w-24 h-24 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-3xl mb-6 shadow-xl animate-bounce-slow">
-              <Sparkles className="w-12 h-12 text-white" />
+            {/* Animasyonlu karakterler */}
+            <div className="flex items-center justify-center gap-4 mb-6">
+              <span className="text-6xl animate-bounce" style={{ animationDelay: '0s' }}>🦁</span>
+              <span className="text-6xl animate-bounce" style={{ animationDelay: '0.2s' }}>🐰</span>
+              <span className="text-6xl animate-bounce" style={{ animationDelay: '0.4s' }}>🐻</span>
+              <span className="text-6xl animate-bounce" style={{ animationDelay: '0.6s' }}>🦊</span>
             </div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-4">
-              Merhaba! 👋
+            
+            <h1 className="text-5xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-4">
+              Merhaba Küçük Dostum! 🎈
             </h1>
-            <p className="text-xl text-gray-600 mb-8">
-              Güvenli video izleme platformuna hoş geldin! 🌟
+            
+            <p className="text-xl text-gray-600 mb-4">
+              Güvenli video dünyasına hoş geldin! 🌈
             </p>
-            <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 max-w-xl mx-auto shadow-xl">
-              <Search className="w-12 h-12 text-indigo-400 mx-auto mb-4" />
-              <p className="text-gray-600">
-                Yukarıdaki arama kutusunu kullanarak izlemek istediğin videoyu ara!
+            
+            <p className="text-lg text-indigo-500 mb-8">
+              Eğlenceli ve öğretici videolar seni bekliyor! 🎬✨
+            </p>
+            
+            <div className="bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 rounded-3xl p-8 max-w-xl mx-auto shadow-xl border-2 border-indigo-100">
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <span className="text-3xl">🔍</span>
+                <Search className="w-10 h-10 text-indigo-500" />
+                <span className="text-3xl">🎯</span>
+              </div>
+              <p className="text-gray-700 text-lg font-medium">
+                Yukarıdaki arama kutusuna tıkla ve
+              </p>
+              <p className="text-purple-600 text-xl font-bold mt-2">
+                en sevdiğin videoları keşfet! 🚀
               </p>
             </div>
 
