@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Lock, Search, ArrowLeft } from 'lucide-react';
+import { Lock, Search, ArrowLeft, Mic } from 'lucide-react';
 import ParentLogin from './parent-login';
 import { useRouter } from 'next/navigation';
 
@@ -15,8 +15,49 @@ export default function ChildHeader({ onSearch, searchQuery }: ChildHeaderProps)
   const [localQuery, setLocalQuery] = useState(searchQuery);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(false);
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Sesli arama desteğini kontrol et
+  useEffect(() => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      setSpeechSupported(true);
+    }
+  }, []);
+
+  // Sesli arama başlat
+  const startVoiceSearch = () => {
+    const SpeechRecognition = (window as unknown as { SpeechRecognition: typeof window.SpeechRecognition; webkitSpeechRecognition: typeof window.SpeechRecognition }).SpeechRecognition || (window as unknown as { SpeechRecognition: typeof window.SpeechRecognition; webkitSpeechRecognition: typeof window.SpeechRecognition }).webkitSpeechRecognition;
+    if (!SpeechRecognition) return;
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'tr-TR';
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => {
+      setIsListening(true);
+    };
+
+    recognition.onresult = (event: SpeechRecognitionEvent) => {
+      const transcript = event.results[0][0].transcript;
+      setLocalQuery(transcript);
+      setIsListening(false);
+      onSearch(transcript);
+    };
+
+    recognition.onerror = () => {
+      setIsListening(false);
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+    };
+
+    recognition.start();
+  };
 
   // Önerileri getir
   useEffect(() => {
@@ -96,8 +137,10 @@ export default function ChildHeader({ onSearch, searchQuery }: ChildHeaderProps)
                 }}
                 onFocus={() => setShowSuggestions(true)}
                 onBlur={() => {}}
-                placeholder="Video ara... 🎬"
-                className="w-full py-3 px-5 pl-12 rounded-2xl border-2 border-indigo-200 focus:border-indigo-400 bg-white text-lg transition-all"
+                placeholder={isListening ? 'Dinleniyor... 🎤' : 'Video ara... 🎬'}
+                className={`w-full py-3 px-5 pl-12 pr-12 rounded-2xl border-2 focus:border-indigo-400 bg-white text-lg transition-all ${
+                  isListening ? 'border-red-400 animate-pulse' : 'border-indigo-200'
+                }`}
                 autoComplete="off"
               />
               <button
@@ -107,6 +150,22 @@ export default function ChildHeader({ onSearch, searchQuery }: ChildHeaderProps)
               >
                 <Search className="w-5 h-5" />
               </button>
+              
+              {/* Sesli Arama Butonu */}
+              {speechSupported && (
+                <button
+                  type="button"
+                  onClick={startVoiceSearch}
+                  className={`absolute right-4 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                    isListening 
+                      ? 'bg-red-500 text-white animate-pulse' 
+                      : 'bg-indigo-100 text-indigo-600 hover:bg-indigo-200'
+                  }`}
+                  title={isListening ? 'Dinleniyor...' : 'Sesli Ara 🎤'}
+                >
+                  <Mic className="w-4 h-4" />
+                </button>
+              )}
             </div>
             
             {/* Öneriler Dropdown */}
